@@ -113,27 +113,55 @@ class TestFileStorage(unittest.TestCase):
         with open("file.json", "r") as f:
             js = f.read()
         self.assertEqual(json.loads(string), json.loads(js))
-    @unittest.skipIf(models.storage_t == 'db', "not testing file storage")
-     def test_get(self, cls, id):
-        '''
-            Test if get method retrieves obj requested
-        '''
-        new_state = State(name="NewYork")
-        storage.new(new_state)
-        key = "State.{}".format(new_state.id)
-        result = storage.get("State", new_state.id)
-        self.assertTrue(result.id, new_state.id)
-        self.assertIsInstance(result, State)
-    @unittest.skipIf(models.storage_t == 'db', "not testing file storage")
-    def test_count(self, cls=None):
-        '''
-            Test if count method returns expected number of objects
-        '''
-        old_count = storage.count("State")
-        new_state1 = State(name="NewYork")
-        storage.new(new_state1)
-        new_state2 = State(name="Virginia")
-        storage.new(new_state2)
-        new_state3 = State(name="California")
-        storage.new(new_state3)
-        self.assertEqual(old_count + 3, storage.count("State"))
+    @unittest.skipIf(storage_type == 'db', 'skip if environ is not db')
+class TestGetCountFS(unittest.TestCase):
+    """testing get and count methods"""
+
+    @classmethod
+    def setUpClass(cls):
+        print('\n\n.................................')
+        print('...... Testing Get and Count ......')
+        print('.......... FS Methods ..........')
+        print('.................................\n\n')
+
+    def setUp(self):
+        """initializes new state and cities for testing"""
+        if os.path.isfile(F):
+            os.remove(F)
+        storage.reload()
+        self.state = State()
+        self.state.name = 'California'
+        self.state.save()
+        self.city1 = City()
+        self.city1.name = 'Fremont'
+        self.city1.state_id = self.state.id
+        self.city1.save()
+        self.city2 = City()
+        self.city2.name = 'San_Francisco'
+        self.city2.state_id = self.state.id
+        self.city2.save()
+
+    def test_get(self):
+        """check if get method returns state"""
+        real_state = storage.get("State", self.state.id)
+        fake_state = storage.get("State", "12345")
+        no_state = storage.get("", "")
+
+        self.assertEqual(real_state, self.state)
+        self.assertNotEqual(fake_state, self.state)
+        self.assertIsNone(no_state)
+
+    def test_count(self):
+        """checks if count method returns correct numbers"""
+        state_count = storage.count("State")
+        city_count = storage.count("City")
+        place_count = storage.count("Place")
+        all_count = storage.count(None)
+
+        self.assertEqual(state_count, 1)
+        self.assertEqual(city_count, 2)
+        self.assertEqual(place_count, 0)
+        self.assertEqual(all_count, 18)
+
+if __name__ == '__main__':
+    unittest.main  
